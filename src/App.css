@@ -1,0 +1,127 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Backgrounds — warm amber-tinted near-blacks */
+  --bg-base:      oklch(11% 0.016 55);
+  --bg-surface-1: oklch(15.5% 0.016 55);
+  --bg-surface-2: oklch(20% 0.016 55);
+  --bg-surface-3: oklch(25% 0.016 55);
+
+  /* Borders */
+  --border-subtle: oklch(27% 0.018 55);
+  --border-muted:  oklch(34% 0.018 55);
+
+  /* Text */
+  --text-primary:   oklch(93% 0.012 65);
+  --text-secondary: oklch(67% 0.012 65);
+  --text-muted:     oklch(46% 0.008 65);
+
+  /* Honey Gold */
+  --gold-bright:  oklch(76% 0.17 68);
+  --gold-mid:     oklch(66% 0.17 60);
+  --gold-dark:    oklch(52% 0.15 55);
+  --gold-subtle:  oklch(19% 0.05 55);
+  --gold-glow:    oklch(76% 0.17 68 / 0.18);
+
+  /* Semantic */
+  --green:        oklch(67% 0.15 145);
+  --green-subtle: oklch(19% 0.06 145);
+  --amber:        oklch(76% 0.17 68);
+  --amber-subtle: oklch(19% 0.05 55);
+  --red:          oklch(60% 0.18 25);
+  --red-subtle:   oklch(17% 0.07 25);
+
+  /* Type */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'Onest', system-ui, -apple-system, sans-serif;
+
+  /* Motion */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 250ms;
+  --dur-slow: 450ms;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular numbers for all data */
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* Section wrapper */
+.section {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* Divider */
+.rule {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 0;
+}
+
+/* Section label */
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  font-variant-caps: all-small-caps;
+}
+
+/* Skeleton pulse */
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.7; }
+}
+.skeleton {
+  background: var(--bg-surface-2);
+  border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+/* Risk badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge--low    { background: var(--green-subtle);  color: var(--green); }
+.badge--medium { background: var(--amber-subtle);  color: var(--gold-bright); }
+.badge--high   { background: var(--red-subtle);    color: var(--red); }
+
+/* Entrance animation */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 0.55s var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .skeleton { animation: none; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border-muted); border-radius: 3px; }
