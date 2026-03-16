@@ -481,7 +481,7 @@ function CategorySection({ category: cat, pools, loading, last }) {
   const hasLeveraged = pools.some(p => isLeveragedVault(p))
 
   return (
-    <section style={{ borderBottom: last ? 'none' : '1px solid var(--border-subtle)', padding: '52px 0' }}>
+    <section id={cat.id} style={{ borderBottom: last ? 'none' : '1px solid var(--border-subtle)', padding: '52px 0' }}>
       <div className="section">
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>

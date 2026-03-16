@@ -21,7 +21,14 @@ export default function Header() {
   const { data: chain, loading } = useChainTVL()
 
   return (
-    <header style={{ borderBottom: '1px solid var(--border-subtle)', padding: '28px 0' }}>
+    <header style={{
+      borderBottom: '1px solid var(--border-subtle)',
+      padding: '28px 0',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      background: 'var(--bg-base)',
+    }}>
       <div className="section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BerachainLogo />
@@ -41,6 +48,33 @@ export default function Header() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            {[
+              { href: '#featured',    label: 'Featured' },
+              { href: '#stablecoins', label: 'Stables' },
+              { href: '#btc',         label: 'BTC' },
+              { href: '#eth',         label: 'ETH' },
+              { href: '#bera',        label: 'BERA' },
+            ].map(({ href, label }) => (
+              <a
+                key={href}
+                href={href}
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  color: 'var(--text-muted)',
+                  textDecoration: 'none',
+                  letterSpacing: '0.04em',
+                  transition: 'color var(--dur-fast)',
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+          <div style={{ width: 1, height: 20, background: 'var(--border-subtle)' }} />
           <div style={{ textAlign: 'right' }}>
             <div className="section-label" style={{ color: 'var(--text-muted)' }}>Chain TVL</div>
             <div className="num" style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>
