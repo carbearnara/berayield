@@ -136,9 +136,11 @@ body {
     --red-subtle:     #fdecea;
   }
 
-  /* Hide everything except the report */
-  body > #root > * { display: none !important; }
-  body > #root .report-main { display: block !important; }
+  /* Hide everything except the report.
+     OpportunityFeed uses a fragment so report-main is a direct child of
+     the App wrapper div — hide siblings, not the wrapper itself. */
+  body > #root > div > *:not(.report-main) { display: none !important; }
+  .report-main { display: block !important; }
 
   .report-main {
     padding: 0 !important;
