@@ -13,9 +13,9 @@ const COLS = [
   { key: 'project', label: 'Protocol', numeric: false },
   { key: 'symbol', label: 'Pool', numeric: false },
   { key: 'tvlUsd', label: 'TVL', numeric: true },
-  { key: 'apyBase', label: 'Base APY', numeric: true },
-  { key: 'apyReward', label: 'Reward APY', numeric: true },
-  { key: 'apy', label: 'Total APY', numeric: true },
+  { key: 'apyBase', label: 'Base APR', numeric: true },
+  { key: 'apyReward', label: 'Reward APR', numeric: true },
+  { key: 'apy', label: 'Total APR', numeric: true },
   { key: '_risk', label: 'Risk', numeric: false },
 ]
 
@@ -250,7 +250,7 @@ function PoolRow({ pool, expanded, onToggle }) {
           <td colSpan={COLS.length} style={{ padding: '0 12px 16px', background: 'var(--bg-surface-1)' }}>
             <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
               {pool.apyMean30d != null && (
-                <Detail label="30d avg APY" value={formatAPY(pool.apyMean30d)} />
+                <Detail label="30d avg APR" value={formatAPY(pool.apyMean30d)} />
               )}
               {pool.il7d != null && (
                 <Detail label="7d IL" value={`${pool.il7d.toFixed(2)}%`} />

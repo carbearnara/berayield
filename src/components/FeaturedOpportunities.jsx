@@ -134,9 +134,10 @@ export default function FeaturedOpportunities() {
             accentColor="var(--gold-bright)"
             accentSubtle="var(--gold-subtle)"
             protocol="Liquid Royalty × Kodiak"
-            tag="RWA · LP"
-            tagColor="var(--gold-bright)"
-            tagBg="var(--gold-subtle)"
+            tag="LP"
+            tagColor="var(--text-muted)"
+            tagBg="var(--bg-surface-2)"
+            tagBorder="var(--border-subtle)"
             asset="SAIL.r / USDe"
             apyDisplay={sailrApy != null ? `${sailrApy.toFixed(1)}%` : '—'}
             apyBreakdown={
@@ -153,7 +154,7 @@ export default function FeaturedOpportunities() {
             tvl={sailrTvl ?? 4_800_000}
             tvlNote={sailrTvl == null ? 'est.' : null}
             riskLevel="High"
-            statusBadge={{ label: 'LP · IL Risk', color: 'var(--red)', bg: 'var(--red-subtle)' }}
+            statusBadge={{ label: 'RWA', color: 'var(--gold-bright)', bg: 'var(--gold-subtle)' }}
             description={
               <>
                 <strong>SAIL.r</strong> is a royalty token issued by Liquid Royalty — it represents a
@@ -171,9 +172,10 @@ export default function FeaturedOpportunities() {
             accentColor="oklch(68% 0.14 250)"
             accentSubtle="oklch(16% 0.04 250)"
             protocol="Liquid Royalty"
-            tag="Junior Vault"
-            tagColor="oklch(68% 0.14 250)"
-            tagBg="oklch(16% 0.04 250)"
+            tag="Structured"
+            tagColor="var(--text-muted)"
+            tagBg="var(--bg-surface-2)"
+            tagBorder="var(--border-subtle)"
             asset="jnrUSD"
             apyDisplay="Variable"
             apyBreakdown={
@@ -184,11 +186,7 @@ export default function FeaturedOpportunities() {
             apyColor="oklch(68% 0.14 250)"
             tvl={juniorTvl}
             riskLevel="High"
-            statusBadge={
-              juniorStatus === 'under-collateralized'
-                ? { label: 'Early Stage', color: 'var(--amber)', bg: 'var(--amber-subtle)' }
-                : null
-            }
+            statusBadge={{ label: 'Junior Tranche', color: 'oklch(68% 0.14 250)', bg: 'oklch(16% 0.04 250)' }}
             description={
               <>
                 The <strong>junior tranche</strong> of Liquid Royalty's structured vault absorbs
@@ -205,18 +203,19 @@ export default function FeaturedOpportunities() {
           {/* ── Card 3: Everlong (Coming Soon) ── */}
           <FeaturedCard
             loading={false}
-            href="https://github.com/delvtech/everlong"
+            href="https://foreverlong.io"
             accentColor="var(--border-muted)"
             accentSubtle="var(--bg-surface-2)"
-            protocol="DELV / Hyperdrive"
-            tag="Fixed Rate Vaults"
+            protocol="Everlong"
+            tag="Vault"
             tagColor="var(--text-muted)"
             tagBg="var(--bg-surface-2)"
-            asset="Everlong"
+            tagBorder="var(--border-subtle)"
+            asset="BTC / ETH Vaults"
             apyDisplay="TBD"
             apyBreakdown={
               <div style={{ marginTop: 5, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                Variable fixed-rate compounding
+                Fee-based yield, no IL
               </div>
             }
             apyColor="var(--text-muted)"
@@ -225,10 +224,10 @@ export default function FeaturedOpportunities() {
             statusBadge={{ label: 'Coming Soon', color: 'var(--text-muted)', bg: 'var(--bg-surface-2)' }}
             description={
               <>
-                <strong>Everlong</strong> is a yield vault product built on Hyperdrive that automatically
-                rolls fixed-rate positions as they mature, compounding returns without user action.
-                Designed to bring predictable yield to Berachain's PoL ecosystem — not yet deployed
-                on mainnet.
+                <strong>Everlong</strong> is a synthetic liquidity engine — deposit BTC or ETH and
+                stay fully long while a CDP-based synthetic counter-asset deploys your capital into
+                AMMs to earn trading fees. No impermanent loss, no borrow costs, no liquidation risk.
+                Backed by GSR. Pre-launch.
               </>
             }
           />
@@ -249,6 +248,7 @@ function FeaturedCard({
   tag,
   tagColor,
   tagBg,
+  tagBorder,
   asset,
   apyDisplay,
   apyBreakdown,
@@ -316,8 +316,10 @@ function FeaturedCard({
             </span>
           )}
           <span style={{
-            fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            color: tagColor, background: tagBg, padding: '1px 5px', borderRadius: 2,
+            fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+            color: tagColor, background: tagBg,
+            border: tagBorder ? `1px solid ${tagBorder}` : undefined,
+            padding: '2px 6px', borderRadius: 2,
           }}>
             {tag}
           </span>

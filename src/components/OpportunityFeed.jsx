@@ -1,3 +1,4 @@
+import { useState as useReportState, useMemo } from 'react'
 import { useBerachainPools } from '../hooks/useDefiLlama'
 import { useSnrUsd } from '../hooks/useLiquidRoyalty'
 import { useBendVaults } from '../hooks/useBend'
@@ -10,7 +11,10 @@ import { useRheaUsdt0 } from '../hooks/useRhea'
 import { useTermmaxHoney } from '../hooks/useTermmax'
 import { useOrigamiVaults } from '../hooks/useOrigami'
 import { useKodiakStablePools } from '../hooks/useKodiakStable'
-import { formatTVL, formatAPY } from '../utils/formatters'
+import { useSwBera } from '../hooks/useSwBera'
+import { useInfraredSiBera } from '../hooks/useInfraredSiBera'
+import { formatTVL, formatAPY, getRiskLevel, apyToApr } from '../utils/formatters'
+import ReportPage from './ReportPage'
 
 // ─── Protocol name resolution ────────────────────────────────────────────────
 // berapaw is an aggregator — resolve the underlying platform from symbol prefix
@@ -25,6 +29,7 @@ const PROJECT_DISPLAY = {
   'beraborrow':      'Beraborrow',
   'origami-finance': 'Origami',
   'berapaw':         'Berapaw',
+  'berachain-hub':   'Berachain Hub',
   'symbiosis':       'Symbiosis',
   'brownfi':         'Brownfi',
   'rhea-finance':    'Rhea Finance',
@@ -77,8 +82,9 @@ function buildPoolUrl(pool) {
 
   switch (project) {
     case 'infrared-finance':
-      if (sym.includes('IBERA')) return 'https://infrared.finance/ibera'
-      if (sym.includes('IBGT'))  return 'https://infrared.finance/ibgt'
+      if (sym.includes('SIBERA')) return 'https://infrared.finance/ibera'
+      if (sym.includes('IBERA'))  return 'https://infrared.finance/ibera'
+      if (sym.includes('IBGT'))   return 'https://infrared.finance/ibgt'
       return 'https://infrared.finance/vaults'
 
     case 'origami-finance': {
@@ -142,6 +148,9 @@ function buildPoolUrl(pool) {
     case 'termmax':
       return 'https://app.termmax.ts.finance/earn/berachain/0xd07f1862ae599697cdcd6fd36df3c33af25fd782?chain=berachain&persistChain=1'
 
+    case 'berachain-hub':
+      return 'https://hub.berachain.com/stake'
+
     default:
       return 'https://defillama.com/yields?chain=Berachain'
   }
@@ -151,7 +160,7 @@ function buildPoolUrl(pool) {
 
 const BTC_TOKENS  = ['WBTC','STBTC','LBTC','SOLVBTC','UNIBTC','BRBTC','CBBTC','TBTC']
 const ETH_TOKENS  = ['WETH','WEETH','RSWETH','BERAETH','PRIMEETH']
-const BERA_TOKENS = ['BERA','IBGT','OSBGT','WGBERA','LBGT']
+const BERA_TOKENS = ['BERA','IBGT','OSBGT','WGBERA','LBGT','SWBERA','SIBERA']
 
 function symContains(pool, tokens) {
   const s = (pool.symbol || '').toUpperCase()
@@ -185,7 +194,9 @@ function resolveRewardLabel(pool) {
 // I-WETH-USDC.E: Infrared WETH/USDC LP vault — not a clean ETH yield entry
 const BLOCKLIST_SYMBOLS = new Set([
   'KODIWBTC-KDK', 'KODIWBERA-KDK', 'KODIWBERA-BERO',
-  'SNECT', 'OAC-WBTC-WETH-A', 'I-WETH-USDC.E', 'LBTC',
+  'SNECT', 'BB.SNECT', 'OAC-WBTC-WETH-A', 'I-WETH-USDC.E', 'LBTC',
+  'SWBERA', // replaced by native staking entry via useSwBera
+  'IBGT',   // replaced by fresher data entry via useInfraredIBGT
 ])
 const BLOCKLIST_PROJECTS = new Set(['bex'])
 
@@ -226,7 +237,11 @@ function cleanSymbol(pool) {
 
 function getTypeLabel(pool) {
   if (pool.exposure === 'single') {
-    const lending = new Set(['dolomite','euler-v2','woofi-earn','bend','beraborrow','prime-vaults','rhea-finance','termmax'])
+    const lending = new Set(['dolomite','euler-v2','woofi-earn','bend','beraborrow','rhea-finance','termmax'])
+    const staking = new Set(['infrared-finance','berachain-hub'])
+    if (staking.has(pool.project)) return 'Staking'
+    // berapaw RE7* pools are Bend lending vaults
+    if (pool.project === 'berapaw' && /^RE7/i.test(pool.symbol || '')) return 'Lending'
     return lending.has(pool.project) ? 'Lending' : 'Single-sided'
   }
   return 'LP'
@@ -293,8 +308,8 @@ const CATEGORIES = [
     description: 'Yields for Berachain-native assets: BERA, iBGT, iBERA, osBGT. Single-sided options shown first — LPs offer higher yield with IL risk against paired assets.',
     accent: 'var(--gold-bright)',
     accentSubtle: 'var(--gold-subtle)',
-    maxItems: 9,
-    maxSingle: 5,
+    maxItems: 10,
+    maxSingle: 7,
     minTvl: 20_000,
     maxApy: 150,
     filter: isBeraPool,
@@ -304,28 +319,51 @@ const CATEGORIES = [
 function pickPools(pools, cat) {
   if (!pools) return []
   const filtered = pools
-    .filter(p => !BLOCKLIST_SYMBOLS.has((p.symbol || '').toUpperCase()))
-    .filter(p => !BLOCKLIST_PROJECTS.has(p.project))
+    .filter(p => p._synthetic || !BLOCKLIST_SYMBOLS.has((p.symbol || '').toUpperCase()))
+    .filter(p => p._synthetic || !BLOCKLIST_PROJECTS.has(p.project))
+    // oriBGT already shown via Origami vaults; suppress the Dolomite lending duplicate
+    .filter(p => !(p.project === 'dolomite' && (p.symbol || '').toUpperCase().includes('ORIBGT')))
     .filter(cat.filter)
-    .filter(p => (p.apy || 0) > 0 && (p.apy || 0) < cat.maxApy)
+    .filter(p => p._synthetic || ((p.apy || 0) > 0 && (p.apy || 0) < cat.maxApy))
     // Skip TVL filter for external sources where TVL data is unreliable or vaults are new
-    .filter(p => p.project === 'brownfi' || p.project === 'origami-finance' || (p.tvlUsd || 0) >= cat.minTvl)
+    .filter(p => p.project === 'brownfi' || p.project === 'origami-finance' || p._synthetic || (p.tvlUsd || 0) >= cat.minTvl)
+
+  // Deduplicate Euler pools: keep only the highest-TVL pool per underlying symbol
+  // (Euler deploys multiple vault addresses for the same asset)
+  const eulerSeen = new Map()
+  const deduped = filtered.filter(p => {
+    if (p.project !== 'euler-v2') return true
+    const key = (p.symbol || '').toUpperCase()
+    const existing = eulerSeen.get(key)
+    if (!existing || (p.tvlUsd || 0) > (existing.tvlUsd || 0)) {
+      eulerSeen.set(key, p)
+      return true
+    }
+    return false
+  })
+  // Second pass: remove any earlier lower-TVL Euler entry displaced by a later higher-TVL one
+  const eulerWinners = new Set([...eulerSeen.values()])
+  const filtered2 = deduped.filter(p => p.project !== 'euler-v2' || eulerWinners.has(p))
 
   // If maxSingle is set, cap single-sided slots so LP pools always get representation.
   // Remaining slots after single-sided are filled by LP pools sorted by APY desc.
   if (cat.maxSingle != null) {
-    const single = filtered
-      .filter(p => p.exposure === 'single')
+    // Synthetic pools (swBERA, siBERA, etc.) are always included first;
+    // remaining slots go to TVL-sorted regular pools.
+    const syntheticSingle = filtered2.filter(p => p.exposure === 'single' && p._synthetic)
+    const regularSingle = filtered2
+      .filter(p => p.exposure === 'single' && !p._synthetic)
       .sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0))
-      .slice(0, cat.maxSingle)
-    const lp = filtered
+      .slice(0, cat.maxSingle - syntheticSingle.length)
+    const single = [...syntheticSingle, ...regularSingle]
+    const lp = filtered2
       .filter(p => p.exposure !== 'single')
       .sort((a, b) => (b.apy || 0) - (a.apy || 0))
       .slice(0, cat.maxItems - single.length)
     return [...single, ...lp]
   }
 
-  return sortPools(filtered).slice(0, cat.maxItems)
+  return sortPools(filtered2).slice(0, cat.maxItems)
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -414,7 +452,17 @@ function applyLrOverride(pool, lrData) {
   }
 }
 
-export default function OpportunityFeed() {
+function annotatePool(pool) {
+  return {
+    ...pool,
+    _protocol: resolveProtocol(pool),
+    _type:     getTypeLabel(pool),
+    _risk:     getRiskLevel(pool),
+    _url:      buildPoolUrl(pool),
+  }
+}
+
+export default function OpportunityFeed({ showReport, onToggleReport }) {
   const { data: pools, loading } = useBerachainPools()
   const { data: lrData } = useSnrUsd()
   const { data: bendVaults }    = useBendVaults()
@@ -427,6 +475,8 @@ export default function OpportunityFeed() {
   const { data: termmaxHoney }  = useTermmaxHoney()
   const { data: origamiVaults }      = useOrigamiVaults()
   const { data: kodiakStablePools }  = useKodiakStablePools()
+  const { data: swBera }             = useSwBera()
+  const { data: siBera }             = useInfraredSiBera()
 
   const allPools = (() => {
     if (!pools) return pools
@@ -437,13 +487,15 @@ export default function OpportunityFeed() {
       ...(termmaxHoney  ? [termmaxHoney]  : []),
       ...(origamiVaults || []),
       ...(kodiakStablePools || []),
+      ...(swBera ? [swBera] : []),
+      ...(siBera ? [siBera] : []),
     ]
     return [...pools, ...extra]
   })()
 
   const enriched = allPools
-    ? allPools.map(p =>
-        applyLrOverride(
+    ? allPools.map(p => {
+        const overridden = applyLrOverride(
           applyBendOverride(
             applyKodiakOverride(
               applyDolomiteOverride(
@@ -456,21 +508,56 @@ export default function OpportunityFeed() {
           ),
           lrData
         )
-      )
+        // _synthetic pools (swBERA, siBERA, etc.) already report APR.
+        // DeFiLlama and most protocol APIs return APY — convert to APR for consistency.
+        if (overridden._synthetic) return overridden
+        return {
+          ...overridden,
+          apyBase:   apyToApr(overridden.apyBase),
+          apyReward: apyToApr(overridden.apyReward),
+          apy:       apyToApr(overridden.apy),
+        }
+      })
     : allPools
 
+  const reportSections = useMemo(() => {
+    if (!enriched) return []
+    return CATEGORIES.map(cat => {
+      const pools = pickPools(enriched, cat).map(annotatePool)
+      const topYield = [...pools].sort((a, b) => (b.apy || 0) - (a.apy || 0))[0] ?? null
+      const singles = pools.filter(p => p.exposure === 'single')
+      const safestSource = singles.length > 0 ? singles : pools
+      const safest = [...safestSource].sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0))[0] ?? null
+      return {
+        label: cat.label,
+        sublabel: cat.sublabel,
+        accent: cat.accent,
+        topYield,
+        safest: safest?.pool !== topYield?.pool ? safest : null,
+      }
+    })
+  }, [enriched])
+
   return (
-    <main>
-      {CATEGORIES.map((cat, i) => (
-        <CategorySection
-          key={cat.id}
-          category={cat}
-          pools={pickPools(enriched, cat)}
-          loading={loading}
-          last={i === CATEGORIES.length - 1}
-        />
-      ))}
-    </main>
+    <>
+      {showReport
+        ? <ReportPage sections={reportSections} />
+        : (
+          <main>
+            {CATEGORIES.map((cat, i) => (
+              <CategorySection
+                key={cat.id}
+                category={cat}
+                pools={pickPools(enriched, cat)}
+                loading={loading}
+                last={i === CATEGORIES.length - 1}
+              />
+            ))}
+          </main>
+        )
+      }
+      <ReportFAB loading={loading} showReport={showReport} onClick={onToggleReport} />
+    </>
   )
 }
 
@@ -575,11 +662,30 @@ function isLeveragedVault(pool) {
 // same-underlying derivative pairs (e.g. iBGT/wgBERA). IL risk is low.
 function isCorrelatedLP(pool) {
   if (pool.exposure !== 'multi') return false
-  // All stablecoin LP pools are correlated (stable/stable pairs)
-  if (isStablecoinPool(pool)) return true
-  // BGT-derivative pairs
+
+  // Stable/stable pairs — DeFiLlama sets stablecoin:true only when ALL assets are stable
+  if (pool.stablecoin === true) return true
+
   const sym = (pool.symbol || '').toUpperCase()
-  return sym.includes('IBGT') && (sym.includes('WGBERA') || sym.includes('GBERA'))
+
+  // If the pool contains any stablecoin, the pair is cross-type — not correlated.
+  // e.g. WBERA/HONEY: BERA ecosystem + stablecoin → IL risk, not correlated.
+  const STABLES = ['USDC','USDT','HONEY','NECT','BYUSD','DAI','USD1','PRIMEUSD','SNRUSD','USDE']
+  if (STABLES.some(s => sym.includes(s))) return false
+
+  // BERA-ecosystem pairs: all tokens track native BERA value.
+  // Match greedily longest-first and consume matched text to prevent a single token
+  // (e.g. WBERA) from matching multiple entries (WBERA + BERA).
+  const BERA_DERIVS = ['WGBERA','SWBERA','SIBERA','OSBGT','GBERA','IBERA','WBERA','IBGT','BERA']
+  let s = sym
+  let beraCount = 0
+  for (const d of BERA_DERIVS) {
+    if (s.includes(d)) {
+      beraCount++
+      s = s.replace(d, '')
+    }
+  }
+  return beraCount >= 2
 }
 
 function OpportunityCard({ pool, accent, accentSubtle }) {
@@ -678,21 +784,31 @@ function OpportunityCard({ pool, accent, accentSubtle }) {
         {cleanSymbol(pool)}
       </div>
 
-      {/* APY */}
+      {/* APR */}
       <div style={{ marginBottom: 16 }}>
-        <div
-          className="num"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '2.25rem',
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <div
+            className="num"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2.25rem',
+              fontWeight: 700,
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
+              color: accent,
+              opacity: isLP ? 0.8 : 1,
+            }}
+          >
+            {formatAPY(totalApy)}
+          </div>
+          <span style={{
+            fontSize: '0.6rem',
             fontWeight: 700,
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-            color: accent,
-            opacity: isLP ? 0.8 : 1,
-          }}
-        >
-          {formatAPY(totalApy)}
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            paddingBottom: 2,
+          }}>APR</span>
         </div>
         <div style={{ marginTop: 5, display: 'flex', gap: 10, fontSize: '0.7rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
           {pool.apyBase > 0 && (
@@ -730,6 +846,59 @@ function OpportunityCard({ pool, accent, accentSubtle }) {
 }
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
+
+// ─── Report FAB ───────────────────────────────────────────────────────────────
+
+function ReportFAB({ loading, showReport, onClick }) {
+  const [hovered, setHovered] = useReportState(false)
+  const disabled = loading
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={showReport ? 'Back to dashboard' : 'View yield report'}
+      className="no-print"
+      style={{
+        position: 'fixed',
+        bottom: 28,
+        right: 28,
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        height: 48,
+        padding: '0 20px 0 16px',
+        borderRadius: 24,
+        background: disabled ? 'var(--bg-surface-2)' : hovered ? 'var(--gold-bright)' : showReport ? 'var(--bg-surface-2)' : 'var(--bg-surface-1)',
+        border: `1px solid ${disabled ? 'var(--border-subtle)' : hovered ? 'var(--gold-bright)' : 'var(--border-muted)'}`,
+        color: disabled ? 'var(--text-muted)' : hovered ? '#0d0d0d' : 'var(--text-secondary)',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        boxShadow: hovered && !disabled ? '0 4px 20px rgba(245,166,35,0.25)' : '0 2px 8px rgba(0,0,0,0.4)',
+        transition: 'background 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: disabled ? 0.4 : 1 }}>
+        {showReport
+          ? <><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>
+          : <>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </>
+        }
+      </svg>
+      <span style={{ fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.01em' }}>
+        {showReport ? 'Dashboard' : 'Yield Report'}
+      </span>
+    </button>
+  )
+}
 
 function SkeletonCard({ accent }) {
   return (

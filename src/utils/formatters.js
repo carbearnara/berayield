@@ -13,6 +13,16 @@ export function formatAPY(value) {
   return `${value.toFixed(2)}%`
 }
 
+// Alias — prefer this going forward
+export const formatAPR = formatAPY
+
+// Convert APY (compounded) → APR (simple annualized) assuming daily compounding.
+// Pools already reporting APR (e.g. _synthetic hooks) should skip this.
+export function apyToApr(apy) {
+  if (apy == null || isNaN(apy) || apy <= 0) return apy
+  return parseFloat((365 * (Math.pow(1 + apy / 100, 1 / 365) - 1) * 100).toFixed(2))
+}
+
 export function getApyColor(value) {
   if (!value || value <= 0) return 'var(--text-muted)'
   if (value < 5) return 'var(--text-secondary)'

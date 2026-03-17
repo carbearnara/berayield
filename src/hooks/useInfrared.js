@@ -57,6 +57,7 @@ async function fetchInfraredIBGT() {
     stablecoin:       false,
     chain:            'Berachain',
     rewardLabel:      'wiBGT',
+    _synthetic:       true,
   }
 }
 

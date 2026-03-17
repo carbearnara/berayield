@@ -108,6 +108,97 @@ body {
 .badge--medium { background: var(--amber-subtle);  color: var(--gold-bright); }
 .badge--high   { background: var(--red-subtle);    color: var(--red); }
 
+/* Print */
+@media print {
+  .no-print { display: none !important; }
+
+  @page { margin: 10mm 12mm; size: letter portrait; }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 0.75rem;
+  }
+
+  /* Override CSS vars for print */
+  :root {
+    --text-primary:   #111;
+    --text-secondary: #333;
+    --text-muted:     #666;
+    --border-subtle:  #ddd;
+    --border-muted:   #ccc;
+    --bg-surface-2:   #f5f5f5;
+    --gold-bright:    #c07a00;
+    --gold-subtle:    #fff3d6;
+    --green:          #2a7a4a;
+    --green-subtle:   #e6f4ec;
+    --red:            #b53a2a;
+    --red-subtle:     #fdecea;
+  }
+
+  /* Hide everything except the report */
+  body > #root > * { display: none !important; }
+  body > #root .report-main { display: block !important; }
+
+  .report-main {
+    padding: 0 !important;
+    flex: none !important;
+  }
+
+  .report-header {
+    margin-bottom: 14px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* 2-column layout for sections */
+  .report-sections {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0 24px !important;
+  }
+
+  .report-section {
+    margin-bottom: 12px !important;
+    break-inside: avoid;
+  }
+
+  .report-pool-row {
+    padding: 8px 0 !important;
+  }
+
+  /* Truncate descriptions to 2 lines */
+  .report-pool-desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    font-size: 0.7rem !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide the URL line */
+  .report-pool-link { display: none !important; }
+
+  /* Shrink the APR number */
+  .report-apr-num {
+    font-size: 1.25rem !important;
+  }
+
+  .report-pool-name { margin-bottom: 3px !important; }
+  .report-pool-badges { margin-bottom: 3px !important; }
+
+  .report-footer {
+    margin-top: 6px !important;
+    padding-top: 8px !important;
+  }
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Entrance animation */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(16px); }
