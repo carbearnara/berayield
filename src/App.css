@@ -108,6 +108,14 @@ body {
 .badge--medium { background: var(--amber-subtle);  color: var(--gold-bright); }
 .badge--high   { background: var(--red-subtle);    color: var(--red); }
 
+/* Report typography — EB Garamond for a formal document feel */
+.report-main {
+  --font-display: 'EB Garamond', Georgia, serif;
+  --font-body:    'EB Garamond', Georgia, serif;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.0625rem;
+}
+
 /* Print */
 @media print {
   .no-print { display: none !important; }
